@@ -132,4 +132,34 @@ router.delete('/:id/images/:imageName', auth, async (req, res) => {
   }
 });
 
+// Resim silme endpoint'i
+router.delete('/:id/images', auth, async (req, res) => {
+    try {
+        const project = await Project.findById(req.params.id);
+        if (!project) {
+            return res.status(404).json({ message: 'Proje bulunamadı' });
+        }
+
+        const { imagePath } = req.body;
+        if (!imagePath) {
+            return res.status(400).json({ message: 'Resim yolu belirtilmedi' });
+        }
+
+        // Resmi uploads klasöründen sil
+        const fullPath = path.join(__dirname, '..', imagePath);
+        if (fs.existsSync(fullPath)) {
+            fs.unlinkSync(fullPath);
+        }
+
+        // Resmi proje modelinden kaldır
+        project.images = project.images.filter(img => img !== imagePath);
+        await project.save();
+
+        res.json({ message: 'Resim başarıyla silindi' });
+    } catch (error) {
+        console.error('Resim silme hatası:', error);
+        res.status(500).json({ message: 'Resim silinirken bir hata oluştu' });
+    }
+});
+
 module.exports = router; 
